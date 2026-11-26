@@ -221,3 +221,102 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+
+# ==================================================
+# 1. Restricted Healthcare Data
+# ==================================================
+
+/data/
+/results/
+/raw_data/
+/processed_data/
+
+# Local data exports
+*.csv
+*.tsv
+*.parquet
+*.feather
+*.pkl
+*.pickle
+*.joblib
+*.xlsx
+*.jsonl
+
+# ==================================================
+# 2. Model Artifacts and Cached Embeddings
+# ==================================================
+
+/models/
+/checkpoints/
+/cache/
+/outputs/
+/runs/
+
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.onnx
+*.gguf
+*.npy
+*.npz
+
+# ==================================================
+# 3. Python Environment
+# ==================================================
+
+.env
+.env.*
+.venv/
+venv/
+env/
+.python-version
+
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+build/
+dist/
+
+# ==================================================
+# 4. Jupyter Notebook
+# ==================================================
+
+.ipynb_checkpoints/
+.jupyter/
+
+# ==================================================
+# 5. Credentials and Local Configuration
+# ==================================================
+
+/credentials/
+/secrets/
+
+credentials.json
+service_account.json
+service-account*.json
+
+*.pem
+*.key
+
+# ==================================================
+# 6. IDE and Operating System
+# ==================================================
+
+.DS_Store
+.vscode/
+.idea/
+Thumbs.db
+
+# ==================================================
+# 7. Temporary Files and Logs
+# ==================================================
+
+*.log
+*.tmp
+*.bak
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
