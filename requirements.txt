@@ -1,0 +1,31 @@
+
+# Project: ed-lbp-nlp-benchmark
+# Python: 3.12
+# Conda environment: ed-lbp-nlp
+
+# Data Processing
+numpy==2.5.5
+pandas==3.1.1
+scipy==1.18.1
+openpyxl==3.1.5
+
+# Visualization
+matplotlib==3.11.2
+seaborn==0.13.2
+
+# Traditional Machine Learning
+scikit-learn==1.9.1
+joblib==1.6.0
+
+# Clinical BERT
+torch==2.15.0
+transformers==5.24.1
+accelerate==1.16.0
+
+# Local LLM Inference
+ollama==0.6.3
+
+# Notebook and Utilities
+jupyterlab==4.6.6
+ipykernel==7.4.0
+tqdm==4.70.1
