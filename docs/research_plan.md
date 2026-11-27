@@ -70,13 +70,21 @@ M0–M5 are the core methods. M6 is optional and does not affect completion of t
 
 ### 4.1 Cohort eligibility
 
-Require valid `stay_id`, `subject_id`, usable ICD diagnosis information and nonempty chief complaint. Verify unique encounter-level linkage and remove or resolve invalid records using documented QC rules. Do not restrict by age, admission, vital signs, pain score or LBP keywords. Preserve the natural class distribution.
+Require valid `stay_id`, `subject_id`, usable ICD diagnosis information and nonempty chief complaint. Verify unique encounter-level linkage and remove or resolve invalid records using documented QC rules. Do not restrict by age, admission, vital signs, pain score or LBP keywords. Preserve the natural class distribution. Exclude chief complaints that are missing, empty, whitespace-only or consist entirely of punctuation and symbols.
 
 ### 4.2 Text preprocessing
 
-Use Xie for general data preparation, Lee for basic chief complaint processing, Valmianski for TF-IDF, and Chang for BERT. Apply minimal common cleaning: exclude missing or whitespace-only text, trim and normalize whitespace, and preserve valid short texts and identical complaints from different encounters. Retain punctuation, numbers and stopwords in the shared text; do not perform universal spelling correction, abbreviation expansion, stemming, lemmatization or ontology mapping. Model-specific tokenization and case handling are allowed and documented. This is an adaptation, not a claim that the papers prescribe identical preprocessing.
+**Literature foundation.** Previous studies use different preprocessing strategies depending on their text sources, prediction tasks and NLP methods. Lee et al. (2019) apply basic text normalization without abbreviation expansion, spelling correction or medical ontology mapping. Valmianski et al. (2019) describe preprocessing specifically for TF-IDF representation, while Chang et al. (2020) provide model-specific input settings for Clinical BERT. Miotto et al. (2020) use more extensive preprocessing for longer clinical notes, which may not be appropriate for short chief complaints. Xie et al. (2022) inform the general data preparation and benchmarking framework.
 
-Verify record counts, missingness, class distribution, text length and before/after examples. Any learned vocabulary, IDF or other fitted transformation must be fitted on the current training subset only. Label-conditioned text exploration that informs models is restricted to development data after splitting.
+**Common preprocessing.** Chief complaints are short clinical texts in which capitalization, punctuation, numbers, abbreviations and spelling variations may contain useful information. Removing or standardizing these elements could alter the original meaning or introduce assumptions about clinical language. Apply minimal common preprocessing: exclude missing, empty, whitespace-only and punctuation- or symbol-only complaints; trim and normalize whitespace; preserve valid short texts and identical complaints from different encounters.
+
+**Model-specific preprocessing.** Additional processing, including case handling, tokenization, n-gram construction, padding, truncation and prompt formatting, is handled within the corresponding model pipelines. The study compares complete NLP pipelines using the same source information, eligible encounters, reference labels and experimental partitions, rather than isolating model architecture effects.
+
+**Validation and leakage prevention.** Examine text length, repetition and basic formatting characteristics before preprocessing. Verify record counts, text availability, transformation effects and encounter integrity. Full-dataset descriptive analysis is not used to develop keyword rules or optimize model configurations.
+
+Any learned vocabulary, IDF or other fitted transformation must be fitted on the current training subset only. Task-specific text exploration and supervised model development are restricted to development data after splitting.
+
+This strategy is a project-specific adaptation informed by the literature, not a claim that minimal preprocessing is universally superior.
 
 ### 4.3 Patient-level data splitting
 
@@ -220,7 +228,7 @@ MIMIC-IV-ED represents historical records from a single medical center. Document
 
 ### 6.5 Model and experimental design
 
-The study compares selected implementations with limited tuning, not all possible NLP models. Bio_ClinicalBERT was pretrained on MIMIC-III; potential overlap with the study data cannot be ruled out. LLM pretraining exposure is also not fully known. These are potential risks, not confirmed leakage. Full validation labels and full-training-derived configurations mean the learning curve measures training data efficiency, not total annotation budget. Hardware differs and computational efficiency is not compared. Repeated sampling estimates variability but is not a formal significance test.
+The study compares selected implementations with limited tuning, not all possible NLP models. Bio_ClinicalBERT was pretrained on MIMIC-III; potential overlap with the study data cannot be ruled out. Hardware differs and computational efficiency is not compared. Repeated sampling estimates variability but is not a formal significance test. The comparison evaluates complete NLP pipelines, including model-specific preprocessing and text representations. Differences in performance cannot be attributed solely to model architecture.
 
 ### 6.6 Interpretation boundary
 
@@ -228,36 +236,47 @@ Conclusions apply to this specific dataset, reference phenotype, input and selec
 
 ## 7. Fresh implementation roadmap
 
-Start from original source tables and regenerate all results. Earlier project experience can inform implementation, but old opioid-related results are not part of this study's evidence. Each notebook follows numbered sections, English Markdown rationale, code, execution and result interpretation.
+Start from the original source tables and regenerate all results. Earlier project experience can inform implementation, but old opioid-related results are not part of this study's evidence. Each notebook follows numbered sections, English Markdown rationale, code, execution and result interpretation.
 
 | Phase | Notebook(s) | Main work and deliverables |
 |---|---|---|
-| P1 Dataset exploration | `01_dataset_exploration.ipynb` | Inventory edstays/triage/diagnosis, identifiers, population, availability, linkage and quality checks; initial EDA |
-| P2 Reference labels | `02_reference_label_construction.ipynb` | Document NCQA scope/version, normalize codes, match by code system, aggregate and validate labels; `encounter_reference_labels.csv` |
-| P3 Chief complaint analysis | `03_chief_complaint_analysis.ipynb` | Missing/empty text, lengths, descriptive vocabulary, ambiguity, minimal cleaning and QC; `chief_complaint_cleaned.csv` |
-| P4 Experimental setup | `04_experimental_setup.ipynb` | Integrate and validate eligible encounters; patient-grouped splits; nested subsets; development-only label-conditioned text analysis; shared evaluation functions/configs; `modeling_dataset.csv`, `dataset_splits.csv`, `training_subsets.csv` |
-| P5 Comparative models | `05a_regex_baseline.ipynb`, `05b_tfidf_models.ipynb`, `05c_clinical_bert_models.ipynb`, `05d_zero_shot_llm.ipynb` | Implement M0–M5, pilot, train/validate, freeze models and configurations; optional M6 if feasible |
-| P6 Training data efficiency | `06_training_data_efficiency.ipynb` | Reuse P5 implementations and fixed nested subsets; train reduced-data models; freeze all settings; coordinate final test evaluation for both experiments |
-| P7 Results and discussion | `07_results_and_discussion.ipynb` | Overall comparison table, learning curves, interpretation, literature comparison, limitations, report and presentation |
+| P1 Dataset exploration | `01_dataset_exploration.ipynb` | Inventory source tables, identifiers, population, availability, linkage and quality checks; extract required source data |
+| P2 Reference labels | `02_reference_label_construction.ipynb` | Document NCQA scope and versions, normalize codes, perform exact matching, aggregate and validate encounter-level labels; `encounter_reference_labels.csv` |
+| P3 Dataset preparation and experimental setup | `03_dataset_preparation_and_experimental_setup.ipynb` | Examine chief complaint characteristics, document and apply common preprocessing, integrate and validate eligible encounters, construct patient-grouped splits and nested training subsets, and prepare shared experimental configurations |
+| P4 Comparative models | `04a_regex_baseline.ipynb`, `04b_tfidf_models.ipynb`, `04c_clinical_bert_models.ipynb`, `04d_zero_shot_llm.ipynb` | Implement model-specific preprocessing and M0–M5; perform development-only text exploration, pilot, train, validate and freeze model configurations; optional M6 if feasible |
+| P5 Training data efficiency | `05_training_data_efficiency.ipynb` | Reuse P4 implementations and fixed nested training subsets; train reduced-data models, freeze all settings and coordinate final test evaluation for both experiments |
+| P6 Results and discussion | `06_results_and_discussion.ipynb` | Overall comparison table, learning curves, interpretation, literature comparison, limitations, report and presentation |
 
-P5 and P6 final test evaluation occurs only after all core configurations are frozen. Do not use P5 test results to revise P6. P1–P3 do not investigate opioid dispensing, medication histories, vital signs or other unrelated inputs.
+P3 produces `modeling_dataset.csv`, `dataset_splits.csv` and `training_subsets.csv`. Common text preprocessing and dataset integration are performed in the same notebook without requiring a separate intermediate cleaned-text file.
+
+Final test evaluation for P4 and P5 occurs only after all core configurations are frozen. Do not use Experiment 1 test results to revise Experiment 2.
 
 Proposed repository structure (name not yet committed):
 
-```
-lbp-chief-complaint-nlp/
-  README.md
-  requirements.txt
-  .gitignore
-  docs/research_plan.md
-  sql/01_dataset_exploration/
-  sql/02_reference_labels/
-  sql/03_chief_complaints/
-  notebooks/                 # ten notebooks listed above
-  configs/                   # create as needed
-  results/                   # local only; gitignored
-  models/                    # local only; gitignored
-```
+ed-lbp-nlp-benchmark/
+├── README.md
+├── requirements.txt
+├── .gitignore
+├── docs/
+│   ├── research_plan.md
+│   └── literature_review.md
+├── references/
+│   └── ncqa/                         # local only
+├── sql/
+│   └── 01_dataset_exploration/
+├── notebooks/
+│   ├── 01_dataset_exploration.ipynb
+│   ├── 02_reference_label_construction.ipynb
+│   ├── 03_dataset_preparation_and_experimental_setup.ipynb
+│   ├── 04a_regex_baseline.ipynb
+│   ├── 04b_tfidf_models.ipynb
+│   ├── 04c_clinical_bert_models.ipynb
+│   ├── 04d_zero_shot_llm.ipynb
+│   ├── 05_training_data_efficiency.ipynb
+│   └── 06_results_and_discussion.ipynb
+├── configs/                          # as needed
+├── results/                          # local only
+└── models/                           # local only
 
 ## 8. Scope and open questions
 
@@ -279,5 +298,3 @@ Core scope: one research question, one binary prediction task, six core methods,
 10. Collins et al. (2024). TRIPOD+AI statement. BMJ, 385, e078378. https://doi.org/10.1136/bmj-2023-078378
 11. Qwen3.5-9B model card: https://huggingface.co/Qwen/Qwen3.5-9B ; Ollama: https://ollama.com/library/qwen3.5:9b
 12. scikit-learn StratifiedGroupKFold: https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedGroupKFold.html
-
-**Plan status:** design agreed in principle; implementation and QC not yet performed. Pilot-dependent settings, exact data counts, LLM evaluation feasibility and optional M6 remain subject to verification. This is a fresh plan, not a report of completed experiments.

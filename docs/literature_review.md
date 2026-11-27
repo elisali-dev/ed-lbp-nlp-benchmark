@@ -18,6 +18,7 @@ This document summarizes the literature informing my research design. It is a wo
 | R6 | Chang et al. (2020) | Clinical BERT for ED chief complaint classification | BERT implementation and initial configurations | Core |
 | R7 | Brown et al. (2020) | Zero-shot and few-shot language modeling | Prompt-based classification | Supporting |
 | R8 | Wornow et al. (2023) | EHRSHOT few-shot benchmark | Limited-training-data evaluation | Core |
+| R13 | Weidman et al. (2026) | Lexical machine learning using extremely short EMS chief complaints | Predictive value of very short clinical texts and motivation for comparing lexical and contextual NLP methods | Core |
 
 ### Dataset and Reference Resources
 
@@ -40,6 +41,8 @@ This document summarizes the literature informing my research design. It is a wo
 | Chang [R6] | ED chief complaints | Provider-assigned structured complaint labels | Clinical BERT, LSTM, ELMo | Demonstrates clinical BERT classification and contextual representation extraction. |
 | Brown [R7] | Natural-language task instructions | Multiple NLP tasks | Pretrained LLM prompting | Demonstrates zero-shot and few-shot task performance without task-specific gradient updates. |
 | Wornow [R8] | Longitudinal structured EHR data | Multiple clinical prediction tasks | Foundation model few-shot benchmark | Provides a framework for evaluating models with limited labeled data. |
+| Weidman [R13] | Clinician-recorded EMS chief complaints | Receipt of out-of-hospital lifesaving interventions | Unigram TF-IDF, word count and Random Forest | Demonstrated that chief complaints with a median length of two words can support clinical outcome prediction, with consistent performance across two annual cohorts. |
+
 | **My project** | **ED chief complaint text only** | **Binary ICD-defined LBP** | **Regex, word/character TF-IDF, frozen/fine-tuned Clinical BERT, zero-shot LLM** | **To be evaluated under consistent experimental conditions.** |
 
 The studies use different datasets, inputs, targets, and evaluation metrics. Their reported performance should not be compared directly across studies.
@@ -99,6 +102,37 @@ These are initial design choices, not a reproduction of any individual paper. De
 
 The reduced-data experiment evaluates training data efficiency rather than strict few-shot learning because the full validation partition remains available. It does not reproduce EHRSHOT's sampling protocol.
 
+### 3.5 Text Preprocessing
+
+Previous studies adopt different text preprocessing strategies depending on the text source, prediction task and NLP method.
+
+| Literature | Original Preprocessing Approach | Implication for My Study |
+|---|---|---|
+| Lee [R1] | Special character removal, conversion of digits to written words, and lowercasing; no abbreviation expansion, spelling correction or medical ontology mapping | Chief complaint classification does not necessarily require extensive semantic normalization. |
+| Xie [R2] | General data preparation, quality checks and a fixed test set | Maintain consistent input data and experimental conditions across models. |
+| Miotto [R3] | Punctuation and number removal, lemmatization, vocabulary filtering and spelling correction; model-specific stopword removal and negation handling | Preprocessing designed for longer clinical notes may not be suitable for short chief complaints. |
+| Valmianski [R4] | TF-IDF-specific lowercasing, stopword removal, number replacement, tokenization and n-gram construction | Different text representations can have their own preprocessing pipelines. |
+| Chang [R6] | Exclusion of missing chief complaints; Clinical BERT sequence length limited to 64 tokens | Handle model-specific input requirements within the corresponding model pipeline. |
+
+**My approach**
+
+Chief complaints are short clinical texts in which capitalization, punctuation, numbers, abbreviations and spelling variations may carry useful information. For example, removing punctuation may disrupt clinical abbreviations such as `s/p`, removing numbers may discard information about symptom duration or severity, and stopword removal may alter negation. Capitalization may reflect emphasis, documentation conventions or individual preferences.
+
+Since the objective is to compare different NLP methods, extensive common preprocessing could remove information that some models might otherwise capture.
+
+| Design Decision | My Implementation | Relationship |
+|---|---|---|
+| Common preprocessing | Exclude missing or empty text; normalize whitespace | Project-specific |
+| Information preservation | Retain capitalization, punctuation, numbers, abbreviations, stopwords and spelling variations | Literature-informed adaptation |
+| Short and repeated complaints | Retain valid short texts and identical complaints from distinct encounters | Project-specific |
+| Model-specific preprocessing | Handle case normalization, tokenization, n-grams, padding, truncation and prompt formatting within individual model pipelines | Adaptation |
+| Leakage prevention | Fit corpus-dependent transformations using only the current training subset | Project-specific experimental control |
+
+The resulting comparison evaluates complete NLP pipelines under consistent data and experimental conditions, rather than isolating the effects of model architecture alone.
+
+Minimal common preprocessing is a project-specific design choice informed by the literature, not a claim that it is universally superior.
+
+
 ## 4. Key Findings and Research Insights
 
 | Observation | Evidence | Implication for My Study |
@@ -109,6 +143,28 @@ The reduced-data experiment evaluates training data efficiency rather than stric
 | Clinical BERT can be applied to chief complaint classification. | Chang [R6]; Alsentzer [R5]. | Compare frozen representations with task-specific fine-tuning. |
 | Training data availability is an important experimental dimension. | Miotto [R3]; Wornow [R8]. | Examine model performance across multiple training subset sizes. |
 | Brief complaints may not contain enough information to determine the eventual diagnosis. | Project motivation informed by the clinical text classification literature [R1, R4, R6]. | Recognize ambiguity and limited context when interpreting errors. |
+
+### Predictive Value of Extremely Short Clinical Text
+
+Weidman et al. (2026) examined whether clinician-recorded chief complaints could predict receipt of lifesaving interventions in out-of-hospital emergency care. The study included approximately 9.2 million EMS encounters from 2023 for model development and 9.8 million encounters from 2024 for temporal validation. Chief complaints were extremely short, with a median word count of two and an interquartile range of one to three words.
+
+The authors applied stopword removal and lemmatization using NLTK, followed by unigram TF-IDF representation. Chief complaint word count was included as an additional feature, and Random Forest models were used for separate binary classification tasks. Six of the seven primary intervention categories achieved AUROCs between 0.821 and 0.929 in the derivation cohort, with generally consistent performance in the temporal validation cohort.
+
+The authors selected traditional machine learning rather than an LLM because of computational considerations and the expectation that predictions from very short complaints would depend primarily on keywords rather than complex word order or context. Their exploratory analysis also found that adding bigrams substantially increased training time without improving predictive performance. However, the study did not directly compare lexical methods with contextual language models.
+
+This study is particularly relevant to my project because the chief complaints in MIMIC-IV-ED have a similarly limited text length, with a median of two words. Together with the findings of Valmianski et al. (2019), it strengthens my motivation to examine whether more sophisticated NLP methods provide additional predictive value when the available clinical text is extremely short.
+
+The preprocessing and evaluation protocols are not directly adopted. In particular, Weidman et al. restricted the vocabulary to words appearing in both annual cohorts, whereas my study fits corpus-dependent transformations using only the current training subset. I also retain minimal common preprocessing to preserve potentially useful linguistic information across different NLP methods.
+
+**Implementation review:** The publicly available 2023 and 2024 notebooks (`eso_2023.ipynb` and `eso_2024.ipynb`) provide additional preprocessing details not explicitly reported in the paper. Both implementations apply lowercasing, punctuation replacement, whitespace normalization, regex-based tokenization, within-complaint token deduplication, NLTK English stopword removal and WordNet lemmatization before unigram TF-IDF vectorization.
+
+Chief complaint length is calculated after basic text normalization. This differs from the raw-text length analysis in my study and should be considered when comparing descriptive statistics.
+
+A methodological difference concerns the fitting of text representations. In the 2023 implementation, TF-IDF is fitted on the full derivation corpus before cross-validation. In the 2024 implementation, TF-IDF is fitted independently on the temporal validation corpus. Both implementations restrict their vocabulary to features shared across the two annual cohorts.
+
+Although the Random Forest classifier is reused without retraining during temporal validation, the complete NLP pipeline is not fully frozen. These design choices introduce evaluation-corpus dependencies without directly using outcome labels.
+
+In my study, I retain minimal common preprocessing and fit all corpus-dependent transformations on the current training subset only. This is particularly important for maintaining a consistent evaluation protocol in the training data efficiency experiment.
 
 ### Important Limitations
 
@@ -149,3 +205,4 @@ The following working references are retained from the previous literature revie
 - **[R10]** National Committee for Quality Assurance (NCQA). Use of Imaging Studies for Low Back Pain (LBP). https://www.ncqa.org/report-cards/health-plans/state-of-health-care-quality-report/use-of-imaging-studies-for-low-back-pain-lbp/
 - **[R11]** National Library of Medicine. Value Set Authority Center (VSAC). https://vsac.nlm.nih.gov/ — selected NCQA Uncomplicated Low Back Pain value sets; exact expansion metadata to be documented in P2.
 - **[R12]** Bio_ClinicalBERT model card. https://huggingface.co/emilyalsentzer/Bio_ClinicalBERT
+
