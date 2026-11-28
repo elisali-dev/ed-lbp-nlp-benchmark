@@ -4,7 +4,13 @@
 
 ## 1. Research objective and question
 
-My previous exploratory work with MIMIC-IV-ED led me to question whether more sophisticated NLP models necessarily perform better on very short clinical texts. Valmianski et al. (2019) further motivated this question by showing that lexical methods can be competitive with BERT in a medical short-text task. Rather than assuming that a more complex model is better, I want to examine this empirically in a specific healthcare setting.
+### Research Motivation
+
+In a previous course assignment, I compared spaCy, scispaCy, and medspaCy to characterize low back pain using ICD-defined cohorts and discharge summaries from MIMIC-IV. I found that different NLP approaches provided complementary information, ranging from general entity recognition to biomedical concept extraction and clinical context detection. However, because the study was exploratory and lacked a common predictive task, I could not formally compare their predictive performance.
+
+This experience led me to consider a more focused question: whether more sophisticated NLP approaches necessarily provide better predictive performance for a specific clinical text classification task. ED chief complaints provide an interesting setting for examining this question because they are typically very short and may contain abbreviations, spelling variations, and limited contextual information. Valmianski et al. (2019) further motivated this question by showing that traditional lexical methods can remain competitive with contextual language models in medical short-text classification.
+
+Building on my previous work with low back pain and clinical NLP, this project establishes a controlled classification task using MIMIC-IV-ED chief complaints and ICD-derived reference labels. Rather than assuming that more complex models are better, I aim to compare their predictive performance and examine how their performance changes with the amount of available labeled training data.
 
 **Research question:** How do different NLP models compare in their ability to predict ICD-defined low back pain from emergency department chief complaints?
 
